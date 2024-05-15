@@ -50,7 +50,7 @@ X,y,_a,_b = load_data(title='FashionMNIST')
 #X,y = X.to(device),y.to(device)
 
 X = X.type(torch.float32)
-#y = y.type(torch.float32)
+y = y.type(torch.float32)
 print(X.shape,y.shape)
 X=X.reshape([60000, 1, 28*28])
 #y.reshape([60000, 1, 1])
@@ -70,7 +70,8 @@ class Deep(nn.Module):
         self.act3 = nn.ReLU()
         self.output = nn.Linear(60, 10)
         #self.sigmoid = nn.Sigmoid()
-
+        #self.softmax = nn.Softmax()
+        
     def forward(self, x):
         x = self.flatten(x) #add for mnist
         x = self.act1(self.layer1(x))
@@ -78,6 +79,7 @@ class Deep(nn.Module):
         x = self.act3(self.layer3(x))
         x = (self.output(x))
         #x = self.sigmoid(self.output(x))
+        #x = self.softmax(self.output(x))
         return x
 
 
@@ -87,8 +89,8 @@ def model_train(model, X_train, y_train, X_val, y_val):
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
-    n_epochs = 100 #250   # number of epochs to run
-    batch_size = 64*1*16 #10  # size of each batch
+    n_epochs = 50 #250   # number of epochs to run
+    batch_size = 64*4*16 #10  # size of each batch
     batch_start = torch.arange(0, len(X_train), batch_size)
 
     # Hold the best model
@@ -125,10 +127,10 @@ def model_train(model, X_train, y_train, X_val, y_val):
                 #print(acc)
                 #input(...)
                 #acc = (y_pred.round() == y_batch).float().mean()
-                bar.set_postfix(
-                    loss=float(loss),
-                    acc=float(acc)
-                )
+            bar.set_postfix(
+                loss=float(loss),
+                acc=float(acc)
+            )
         # evaluate accuracy at end of each epoch
         model.eval()
         X_val=X_val.to(device)
@@ -152,6 +154,7 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 # define 5-fold cross validation test harness
 kfold = StratifiedKFold(n_splits=5, shuffle=True)
 cv_scores = []
+#model = Deep().to(device)
 for train, test in kfold.split(X,y):
     # create model, train, and get accuracy
     print('train',train)
@@ -163,7 +166,7 @@ for train, test in kfold.split(X,y):
     print("Accuracy (wide): %.2f" % acc)
     cv_scores.append(acc.cpu())
     break
-
+    
 # evaluate the model
 #cv_scores=cv_scores.cpu()
 acc = np.mean(cv_scores)
