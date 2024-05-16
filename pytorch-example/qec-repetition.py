@@ -5,7 +5,6 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 import tqdm
-
 import torch
 
 
@@ -20,35 +19,9 @@ device = (
 print(f"Using {device} device")
 
 
-#import pandas as pd
-'''
-# Read data
-data = pd.read_csv("content/sonar.all-data", header=None)
-#data[61]=data[60]
-X = data.iloc[:, 0:60]
-y = data.iloc[:, 60]
-
-print('data size',data.shape)
-
-from sklearn.preprocessing import LabelEncoder
-encoder = LabelEncoder()
-encoder.fit(y)
-y = encoder.transform(y)
-
-
-
-#import torch
-X = torch.tensor(X.values, dtype=torch.float32)
-y = torch.tensor(y, dtype=torch.float32).reshape(-1, 1)
-
-print(y.shape)
-y=torch.cat((y,y),1)
-print(y.shape)
-'''
 
 #from data import *
 #X,y,_a,_b = load_data(title='FashionMNIST')
-
 #X,y = X.to(device),y.to(device)
 
 
@@ -76,7 +49,7 @@ def generate_data(L,trials):
     y=e
     return X,y
 
-L=10
+L=5
 trials=30000
 X,y=generate_data(L,trials)
 X_test,y_test = generate_data(L,trials//10)
@@ -91,11 +64,11 @@ X = X.type(torch.float32)
 y = y.type(torch.float32)
 X_test = X_test.type(torch.float32)
 y_test = y_test.type(torch.float32)
-print(X.shape,y.shape)
+print('X.shape,y.shape',X.shape,y.shape)
 #t,l=X.shape
 #X=X.reshape([trials, 1, L-1])
 #y=y.reshape([trials,1,L])
-print(X.shape,y.shape)
+#print(X.shape,y.shape)
 
 #input('...')
 
@@ -137,7 +110,9 @@ class Deep(nn.Module):
         #x = self.softmax(self.output(x))
         return x
 
-
+def acc_eval(y_pred,y_batch):
+    return ((y_pred>0) == y_batch).type(torch.float).mean()
+    
 def model_train(model, X_train, y_train, X_val, y_val):
     for i in [X_train, y_train, X_val, y_val]:
         print(i.shape)
@@ -178,17 +153,8 @@ def model_train(model, X_train, y_train, X_val, y_val):
                 # update weights
                 optimizer.step()
                 # print progress                
-                #correct = (y_pred.argmax(1) == y).type(torch.float).sum().item()
-                #acc = (y_pred.argmax(1) == y_batch).type(torch.float).sum().item()
-                #print(y_pred)
-                #print(y_batch)
-                acc = ((y_pred>0) == y_batch).type(torch.float).mean()
-                #print(y_pred)
-                #print(y_pred.argmax(1))
-                #print(y_batch)
-                #print(acc)
-                #input(...)
-                #acc = (y_pred.round() == y_batch).float().mean()
+                #acc = ((y_pred>0) == y_batch).type(torch.float).mean()
+                acc = acc_eval(y_pred,y_batch)
                 bar.set_postfix(
                     loss=float(loss),
                     acc=float(acc)
@@ -198,12 +164,8 @@ def model_train(model, X_train, y_train, X_val, y_val):
         X_val=X_val.to(device)
         y_val=y_val.to(device)        
         y_pred = model(X_val)
-        #acc = (y_pred.round() == y_val).float().mean()
-        #acc = (y_pred.argmax(1) == y_val).type(torch.float).sum().item()
-        #acc = (y_pred.argmax(1) == y_val).type(torch.float).mean()
-        acc = ((y_pred>0) == y_val).type(torch.float).mean()
-        #acc = float(acc)
-        #acc = (y_pred.argmax(1) == y_batch).type(torch.float).mean()
+                #acc = ((y_pred>0) == y_val).type(torch.float).mean()
+        acc = acc_eval(y_pred,y_val)        
         if acc > best_acc:
             best_acc = acc
             best_weights = copy.deepcopy(model.state_dict())
