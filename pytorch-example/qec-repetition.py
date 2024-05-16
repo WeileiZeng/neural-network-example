@@ -87,24 +87,14 @@ class Deep(nn.Module):
             modules.append(layer)
             modules.append(act)
         self.linear_relu_stack = nn.Sequential(*modules)
-        '''
-        self.layer1 = nn.Linear(28*28, 640)
-        self.act1 = nn.ReLU()
-        self.layer2 = nn.Linear(640, 640)
-        self.act2 = nn.ReLU()
-        self.layer3 = nn.Linear(640, 60)
-        self.act3 = nn.ReLU()
-        '''
         self.output = nn.Linear(layers[-2], layers[-1])
+        
         #self.sigmoid = nn.Sigmoid()
         #self.softmax = nn.Softmax()
         
     def forward(self, x):
         #x = self.flatten(x) #add for mnist
         x = self.linear_relu_stack(x)
-        #x = self.act1(self.layer1(x))
-        #x = self.act2(self.layer2(x))
-        #x = self.act3(self.layer3(x))
         x = (self.output(x))
         #x = self.sigmoid(self.output(x))
         #x = self.softmax(self.output(x))
@@ -121,8 +111,8 @@ def model_train(model, X_train, y_train, X_val, y_val):
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
-    n_epochs = 50 #250   # number of epochs to run
-    batch_size = 64 #10  # size of each batch
+    n_epochs = 100 #250   # number of epochs to run
+    batch_size = 64*10 #10  # size of each batch
     batch_start = torch.arange(0, len(X_train), batch_size)
 
     # Hold the best model
@@ -139,7 +129,6 @@ def model_train(model, X_train, y_train, X_val, y_val):
                 X_batch = X_train[start:start+batch_size]
                 y_batch = y_train[start:start+batch_size]
                 X_batch,y_batch = X_batch.to(device),y_batch.to(device)
-                #X_batch.reshape((64,1,9))
                 #print('X_batch.shape',X_batch.shape)
                 # forward pass
 
@@ -173,20 +162,14 @@ def model_train(model, X_train, y_train, X_val, y_val):
     model.load_state_dict(best_weights)
     return best_acc
 
-from sklearn.model_selection import StratifiedKFold, train_test_split
+#from sklearn.model_selection import StratifiedKFold, train_test_split
 
-# train-test split: Hold out the test set for final model evaluation
-# define 5-fold cross validation test harness
-kfold = StratifiedKFold(n_splits=5, shuffle=True)
 cv_scores = []
 #model = Deep().to(device)
 #for train, test in kfold.split(X,y[:,1]):
 if True:
     # create model, train, and get accuracy
-    #print('train',train)
-    #print('test',test)
-    #print(X[train].shape)
-    layers=[L-1,30,30,30,L]
+    layers=[L-1,L*4,L*8,L*4,L]
     model = Deep(layers).to(device)
     print(model)
     #acc = model_train(model, X[train], y[train], X[test], y[test])
