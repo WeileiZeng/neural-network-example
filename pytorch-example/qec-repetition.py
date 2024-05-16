@@ -7,6 +7,12 @@ import torch.optim as optim
 import tqdm
 import torch
 
+# config
+L=5
+trials=300000
+LAYERS=[L-1,L*8,L*8*4,L*4,L]
+n_epochs = 250 #250   # number of epochs to run
+batch_size = 64*100 #10  # size of each batch
 
 # Get cpu, gpu or mps device for training.
 device = (
@@ -39,18 +45,12 @@ def generate_data(L,trials):
     p=0.2
     e = (torch.rand((trials,L)) + p).floor()
     e=e.type(torch.int8)
-    #print('e',e)
-    #e.type(torch.float32)
-    #et = torch.t(e)
-    #et=et.type(torch.int)
-    #s = H@et %2
     s = e @ torch.t(H) % 2
     X = s
     y=e
     return X,y
 
-L=5
-trials=30000
+
 X,y=generate_data(L,trials)
 X_test,y_test = generate_data(L,trials//10)
 
@@ -89,19 +89,20 @@ class Deep(nn.Module):
         self.linear_relu_stack = nn.Sequential(*modules)
         self.output = nn.Linear(layers[-2], layers[-1])
         
-        #self.sigmoid = nn.Sigmoid()
+        self.sigmoid = nn.Sigmoid()
         #self.softmax = nn.Softmax()
         
     def forward(self, x):
         #x = self.flatten(x) #add for mnist
         x = self.linear_relu_stack(x)
-        x = (self.output(x))
-        #x = self.sigmoid(self.output(x))
-        #x = self.softmax(self.output(x))
+        x = self.output(x)
+        x = self.sigmoid(x)
+        #x = self.softmax(x)
         return x
 
 def acc_eval(y_pred,y_batch):
-    return ((y_pred>0) == y_batch).type(torch.float).mean()
+    #return ((y_pred>0) == y_batch).type(torch.float).mean()
+    return ((y_pred.round()) == y_batch).type(torch.float).mean()
     
 def model_train(model, X_train, y_train, X_val, y_val):
     for i in [X_train, y_train, X_val, y_val]:
@@ -111,8 +112,8 @@ def model_train(model, X_train, y_train, X_val, y_val):
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
-    n_epochs = 100 #250   # number of epochs to run
-    batch_size = 64*10 #10  # size of each batch
+    #n_epochs = 100 #250   # number of epochs to run
+    #batch_size = 64*10 #10  # size of each batch
     batch_start = torch.arange(0, len(X_train), batch_size)
 
     # Hold the best model
@@ -158,6 +159,8 @@ def model_train(model, X_train, y_train, X_val, y_val):
         if acc > best_acc:
             best_acc = acc
             best_weights = copy.deepcopy(model.state_dict())
+    #skip best acc
+    #return acc
     # restore model and return best accuracy
     model.load_state_dict(best_weights)
     return best_acc
@@ -169,7 +172,7 @@ cv_scores = []
 #for train, test in kfold.split(X,y[:,1]):
 if True:
     # create model, train, and get accuracy
-    layers=[L-1,L*4,L*8,L*4,L]
+    layers=LAYERS    
     model = Deep(layers).to(device)
     print(model)
     #acc = model_train(model, X[train], y[train], X[test], y[test])
