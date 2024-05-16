@@ -14,13 +14,14 @@ import torch.nn as nn
 
 
 # config
-L=9
+L=79
 #trials=300000
 #LAYERS=[L-1,L*8,L*8*4,L*4,L]
 #n_epochs = 250 #250   # number of epochs to run
 batch_size = 64 #64*1 #10  # size of each batch
 # Number of epochs
-num_epochs = int(1e3)
+num_epochs = int(1e7)
+HIDDEN_SIZE=L*6
 
 # generate qec data
 def repetition(L):
@@ -84,7 +85,7 @@ def generate_batch(batch_size,H):
 k = 1
 
 # Instantiate one model with 50 neurons on the hidden layers
-model = NeuralNet(hidden_size=50,input_size=L-1,output_size=L)
+model = NeuralNet(hidden_size=HIDDEN_SIZE,input_size=L-1,output_size=L)
 
 # Loss and optimizer
 learning_rate = 8e-3
@@ -97,7 +98,7 @@ Hf = H.float()
 
 m = nn.Sigmoid()
 
-s = torch.rand((batch_size,L-1),requires_grad=True).round()
+
 x_train_base = torch.zeros((batch_size,L-1),requires_grad=True)
 
 for epoch in range(num_epochs):
@@ -120,7 +121,6 @@ for epoch in range(num_epochs):
 
     #check if error matches
     acc_e = 1-((e - e0i )%2).float().mean() 
-
     
     se2 = y_pred@Hf.t() % 2  #float version of syndrome to estimate lose
     loss1 = nn.MSELoss()(se2,x_train)    # loss 1 minimize the difference to the syndrome
