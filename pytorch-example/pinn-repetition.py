@@ -1,5 +1,10 @@
 print('''
-PINN, solve differential equation
+train neural network to decoder repetition code without data
+only use the parity check to verify the right syndrome
+in the meantime, minimize weight of output error
+the network learn to do the job
+
+modified code from reference
 https://towardsdatascience.com/solving-differential-equations-with-neural-networks-4c6aa7b31c51
 ''')
 
@@ -10,7 +15,7 @@ import torch.nn as nn
 
 # config
 L=9
-trials=300000
+#trials=300000
 #LAYERS=[L-1,L*8,L*8*4,L*4,L]
 #n_epochs = 250 #250   # number of epochs to run
 batch_size = 64 #64*1 #10  # size of each batch
