@@ -3,7 +3,13 @@ example of general neural network: data, model, code, environment
 pip install tqdm
 
 
-TODO:
+# progress
+
+currently tested on two type of neural network models. One NN, and one PINN
+
+
+
+# TODO:
 
 
 ## use NN to determine dot array for given picture
@@ -35,4 +41,8 @@ list of conditions:
 - how to adjust the dot density?
 
 
+CNN (convolutional) network may be better for image processing.
 
+it uses shared parameters and sparse connnections in graph.
+
+Indeed, this img2dot issue only care about pixels in local region
