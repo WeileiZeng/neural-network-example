@@ -3,8 +3,6 @@ using dmrg data, find ground state energy for hamiltonian,
 currently using ising model at given legnth with random parameters
 ''')
 
-#rewrite the layers input
-
 import copy
 import numpy as np
 import torch.nn as nn
@@ -18,12 +16,10 @@ folder='../../DMRG/tenpy'
 filename=f'{folder}/data-ising-L{L}-1.pt'  # 41450 entries
 
 # config
-#L=159
-trials=30
-#LAYERS=[L-1,L*8,L*8*4,L*4,L]
+#trials=30
 LAYERS=[2*L-1,L*8,L*8*4,L*4,1]
 n_epochs = 50 #250   # number of epochs to run
-batch_size = 64*1 #10  # size of each batch
+batch_size = 64*100 #10  # size of each batch
 
 # Get cpu, gpu or mps device for training.
 device = (
@@ -36,34 +32,6 @@ device = (
 print(f"Using {device} device")
 
 
-
-#from data import *
-#X,y,_a,_b = load_data(title='FashionMNIST')
-#X,y = X.to(device),y.to(device)
-
-'''
-# generate qec data
-def repetition(L):
-    H=torch.zeros((L-1,L),dtype=torch.int8)
-    for i in range(L-1):
-        H[i,i]=1
-        H[i,i+1]=1
-    return H
-
-def generate_data(L,trials):
-    H = repetition(L)
-    print(H)
-    p=0.2
-    e = (torch.rand((trials,L)) + p).floor()
-    e=e.type(torch.int8)
-    s = e @ torch.t(H) % 2
-    X = s
-    y=e
-    return X,y
-'''
-
-
-
 d = torch.load(filename)
 X = d['X']
 y = d['y']
@@ -72,27 +40,6 @@ print('data shape X Y',X.shape,y.shape)
 X_test,y_test = X[:100],y[:100]
 print('test shape X Y',X_test.shape,y_test.shape)
 
-#X,y=generate_data(L,trials)
-#X_test,y_test = generate_data(L,trials//10)
-
-#from data import *
-#save_data(X,y,X_test,y_test,f'repetition{L}')
-#print(X)
-#print(y)
-#exit()
-
-'''
-X = X.type(torch.float32)
-y = y.type(torch.float32)
-X_test = X_test.type(torch.float32)
-y_test = y_test.type(torch.float32)
-print('X.shape,y.shape',X.shape,y.shape)
-#t,l=X.shape
-#X=X.reshape([trials, 1, L-1])
-#y=y.reshape([trials,1,L])
-#print(X.shape,y.shape)
-'''
-#input('...')
 
 class Deep(nn.Module):
     def __init__(self,layers=[28*28,640,640,60,10]):
@@ -122,13 +69,11 @@ class Deep(nn.Module):
         #x = self.softmax(x)
         return x
 
+# check the percentage error in predicted output ( ground state energy)
 def acc_eval(y_pred,y_batch):
-    return torch.sqrt(
+    return 1 + torch.sqrt(
         ((y_pred - y_batch)**2).mean()
         )/ (y_batch).mean()
-    #return nn.MSELoss()(ypred,
-    #return ((y_pred>0) == y_batch).type(torch.float).mean()
-    return ((y_pred.round()) == y_batch).type(torch.float).mean()
     
 def model_train(model, X_train, y_train, X_val, y_val):
     for i in [X_train, y_train, X_val, y_val]:
@@ -139,8 +84,7 @@ def model_train(model, X_train, y_train, X_val, y_val):
     loss_fn = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
-    #n_epochs = 100 #250   # number of epochs to run
-    #batch_size = 64*10 #10  # size of each batch
+
     batch_start = torch.arange(0, len(X_train), batch_size)
 
     # Hold the best model
@@ -148,10 +92,9 @@ def model_train(model, X_train, y_train, X_val, y_val):
     best_weights = None
 
     for epoch in range(n_epochs):
-        # print(epoch)
         model.train()
         with tqdm.tqdm(batch_start, unit="batch", mininterval=0, disable=False) as bar:
-            bar.set_description(f"Epoch {epoch}")
+            bar.set_description(f"Epoch {epoch}")            
             for start in bar:
                 # take a batch
                 X_batch = X_train[start:start+batch_size]
@@ -170,7 +113,6 @@ def model_train(model, X_train, y_train, X_val, y_val):
                 # update weights
                 optimizer.step()
                 # print progress                
-                #acc = ((y_pred>0) == y_batch).type(torch.float).mean()
                 acc = acc_eval(y_pred,y_batch)
                 #print(acc)
                 bar.set_postfix(
@@ -206,11 +148,11 @@ if True:
     #acc = model_train(model, X[train], y[train], X[test], y[test])
     acc = model_train(model, X, y, X_test, y_test)
     print("Accuracy (wide): %.2f" % acc)
-    cv_scores.append(acc.cpu())
+    cv_scores.append(acc.detach().cpu())
     #break
     
 # evaluate the model
-cv_scores=cv_scores.cpu()
+cv_scores=np.array(cv_scores)
 acc = np.mean(cv_scores)
 std = np.std(cv_scores)
 print("Model accuracy: %.2f%% (+/- %.2f%%)" % (acc*100, std*100))
