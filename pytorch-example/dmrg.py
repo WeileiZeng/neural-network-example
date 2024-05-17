@@ -17,9 +17,9 @@ filename=f'{folder}/data-ising-L{L}-1.pt'  # 41450 entries
 
 # config
 #trials=30
-LAYERS=[2*L-1,L*8,L*8*4,L*4,1]
-n_epochs = 50 #250   # number of epochs to run
-batch_size = 64*100 #10  # size of each batch
+LAYERS=[2*L-1,L*8*4,L*8*4,L*8*4,L*4,1]
+n_epochs = 250 #250   # number of epochs to run
+batch_size = 64*10 #10  # size of each batch
 
 # Get cpu, gpu or mps device for training.
 device = (
@@ -37,7 +37,7 @@ X = d['X']
 y = d['y']
 print('data shape X Y',X.shape,y.shape)
 #torch.save(data,filename)
-X_test,y_test = X[:100],y[:100]
+X_test,y_test = X[:1000],y[:1000]
 print('test shape X Y',X_test.shape,y_test.shape)
 
 
@@ -71,7 +71,7 @@ class Deep(nn.Module):
 
 # check the percentage error in predicted output ( ground state energy)
 def acc_eval(y_pred,y_batch):
-    return 1 + torch.sqrt(
+    return  torch.sqrt(
         ((y_pred - y_batch)**2).mean()
         )/ (y_batch).mean()
     
@@ -116,7 +116,8 @@ def model_train(model, X_train, y_train, X_val, y_val):
                 acc = acc_eval(y_pred,y_batch)
                 #print(acc)
                 bar.set_postfix(
-                    loss=float(loss),
+                    loss=float(loss),#
+                    #acc=f'{loss:9f}',# float(loss),
                     acc=float(acc)
                 )
         # evaluate accuracy at end of each epoch
@@ -140,11 +141,20 @@ def model_train(model, X_train, y_train, X_val, y_val):
 cv_scores = []
 #model = Deep().to(device)
 #for train, test in kfold.split(X,y[:,1]):
-if True:
-    # create model, train, and get accuracy
-    layers=LAYERS    
-    model = Deep(layers).to(device)
-    print(model)
+
+# train the same model the the same data a few times
+layers=LAYERS    
+model = Deep(layers).to(device)
+print(model)
+
+
+for i in range(5):
+    perm = torch.rand
+    indices = torch.randperm(X.size()[0])
+    X=X[indices]
+    y=y[indices]
+    X_test,y_test = X[-1000:],y[-1000:]
+    #modify test data set as well    
     #acc = model_train(model, X[train], y[train], X[test], y[test])
     acc = model_train(model, X, y, X_test, y_test)
     print("Accuracy (wide): %.2f" % acc)
@@ -152,6 +162,7 @@ if True:
     #break
     
 # evaluate the model
+print(cv_scores)
 cv_scores=np.array(cv_scores)
 acc = np.mean(cv_scores)
 std = np.std(cv_scores)
