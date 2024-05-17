@@ -17,9 +17,9 @@ filename=f'{folder}/data-ising-L{L}-1.pt'  # 41450 entries
 
 # config
 #trials=30
-hidden_size= L * 8 * 64
+hidden_size= L * 8 * 64 
 num_hidden_layers=5
-LAYERS= [hidden_size for _ in range(num_hidden_layers)]
+LAYERS= [hidden_size for _ in range(num_hidden_layers+2)]
 LAYERS[0]=2*L-1
 LAYERS[-1]=1
 #LAYERS=[2*L-1,L*8*8,L*8*8,L*8*8,L*8*8,1]
@@ -42,6 +42,8 @@ print(f"Using {device} device")
 d = torch.load(filename)
 X = d['X']
 y = d['y']
+# X = X[:10000] #achieve same acc using 10000 entries instead of 40000 entries
+# y = y[:10000]
 print('data shape X Y',X.shape,y.shape)
 #torch.save(data,filename)
 X_test,y_test = X[:1000],y[:1000]
@@ -168,6 +170,9 @@ for i in range(500):
     #modify test data set as well    
     #acc = model_train(model, X[train], y[train], X[test], y[test])
     best_acc,best_weights = model_train(model, X, y, X_test, y_test, best_acc, best_weights)
+    # restore model and return best accuracy
+    model.load_state_dict(best_weights) 
+    
     acc=best_acc
     print("Accuracy (wide): %.8f" % acc)
     cv_scores.append(acc.detach().cpu())
