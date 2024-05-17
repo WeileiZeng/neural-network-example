@@ -17,9 +17,16 @@ filename=f'{folder}/data-ising-L{L}-1.pt'  # 41450 entries
 
 # config
 #trials=30
-LAYERS=[2*L-1,L*8*4,L*8*4,L*8*4,L*4,1]
-n_epochs = 250 #250   # number of epochs to run
-batch_size = 64*10 #10  # size of each batch
+hidden_size= L * 8 * 64
+num_hidden_layers=5
+LAYERS= [hidden_size for _ in range(num_hidden_layers)]
+LAYERS[0]=2*L-1
+LAYERS[-1]=1
+#LAYERS=[2*L-1,L*8*8,L*8*8,L*8*8,L*8*8,1]
+n_epochs = 100 #250   # number of epochs to run
+batch_size = 64*8 #10  # size of each batch
+torch.set_printoptions(8)
+
 
 # Get cpu, gpu or mps device for training.
 device = (
@@ -74,8 +81,11 @@ def acc_eval(y_pred,y_batch):
     return  torch.sqrt(
         ((y_pred - y_batch)**2).mean()
         )/ (y_batch).mean()
-    
-def model_train(model, X_train, y_train, X_val, y_val):
+
+
+
+
+def model_train(model, X_train, y_train, X_val, y_val,best_acc=-np.inf,best_weights = None):
     for i in [X_train, y_train, X_val, y_val]:
         print(i.shape)
     # loss function and optimizer
@@ -87,14 +97,11 @@ def model_train(model, X_train, y_train, X_val, y_val):
 
     batch_start = torch.arange(0, len(X_train), batch_size)
 
-    # Hold the best model
-    best_acc = - np.inf   # init to negative infinity
-    best_weights = None
 
     for epoch in range(n_epochs):
         model.train()
         with tqdm.tqdm(batch_start, unit="batch", mininterval=0, disable=False) as bar:
-            bar.set_description(f"Epoch {epoch}")            
+            bar.set_description(f"Epoch {epoch}/{n_epochs}")            
             for start in bar:
                 # take a batch
                 X_batch = X_train[start:start+batch_size]
@@ -116,8 +123,8 @@ def model_train(model, X_train, y_train, X_val, y_val):
                 acc = acc_eval(y_pred,y_batch)
                 #print(acc)
                 bar.set_postfix(
-                    loss=float(loss),#
-                    #acc=f'{loss:9f}',# float(loss),
+                    loss=float(loss),
+                    best_acc = float(best_acc),
                     acc=float(acc)
                 )
         # evaluate accuracy at end of each epoch
@@ -134,7 +141,7 @@ def model_train(model, X_train, y_train, X_val, y_val):
     #return acc
     # restore model and return best accuracy
     model.load_state_dict(best_weights)
-    return best_acc
+    return best_acc,best_weights
 
 #from sklearn.model_selection import StratifiedKFold, train_test_split
 
@@ -148,7 +155,11 @@ model = Deep(layers).to(device)
 print(model)
 
 
-for i in range(5):
+# Hold the best model
+best_acc = - np.inf   # init to negative infinity
+best_weights = None
+
+for i in range(500):
     perm = torch.rand
     indices = torch.randperm(X.size()[0])
     X=X[indices]
@@ -156,14 +167,15 @@ for i in range(5):
     X_test,y_test = X[-1000:],y[-1000:]
     #modify test data set as well    
     #acc = model_train(model, X[train], y[train], X[test], y[test])
-    acc = model_train(model, X, y, X_test, y_test)
-    print("Accuracy (wide): %.2f" % acc)
+    best_acc,best_weights = model_train(model, X, y, X_test, y_test, best_acc, best_weights)
+    acc=best_acc
+    print("Accuracy (wide): %.8f" % acc)
     cv_scores.append(acc.detach().cpu())
     #break
     
 # evaluate the model
-print(cv_scores)
+print('historical acc',cv_scores)
 cv_scores=np.array(cv_scores)
-acc = np.mean(cv_scores)
-std = np.std(cv_scores)
-print("Model accuracy: %.2f%% (+/- %.2f%%)" % (acc*100, std*100))
+#acc = np.mean(cv_scores)
+#std = np.std(cv_scores)
+#print("Model accuracy: %.2f%% (+/- %.2f%%)" % (acc*100, std*100))
