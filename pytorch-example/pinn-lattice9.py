@@ -7,7 +7,6 @@ output:
 prob: 3x3x9 tensor, the 9-tensor contain prob for entry being 1,...,9 respectively
 logits:argmax(9-tensor)
 
-
 modified code from reference
 https://towardsdatascience.com/solving-differential-equations-with-neural-networks-4c6aa7b31c51
 ''')
@@ -19,15 +18,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # config
-#L=9
-#trials=300000
-#LAYERS=[L-1,L*8,L*8*4,L*4,L]
-#n_epochs = 250 #250   # number of epochs to run
 batch_size = 64 #64*1 #10  # size of each batch
 # Number of epochs
 num_epochs = int(1e6)
-HIDDEN_SIZE=3*3*9 *9*3
-
+HIDDEN_SIZE=3*3*9 *9*9
 torch.set_printoptions(8)
 
 
@@ -39,10 +33,7 @@ device = (
     if torch.backends.mps.is_available()
     else "cpu"
 )
-#device='cpu'
 print(f"Using {device} device")
-
-
 
 class NeuralNet(nn.Module):
     def __init__(self, hidden_size, output_size=1,input_size=1):
@@ -54,10 +45,11 @@ class NeuralNet(nn.Module):
         self.relu2 = nn.LeakyReLU()
         self.l3 = nn.Linear(hidden_size, hidden_size)
         self.relu3 = nn.LeakyReLU()
-        self.l4 = nn.Linear(hidden_size, output_size)
-        #self.sigmoid = nn.Sigmoid()
+        self.l4 = nn.Linear(hidden_size, hidden_size)
+        self.relu4 = nn.LeakyReLU()
+        self.l5 = nn.Linear(hidden_size, output_size)
         self.softmax = nn.Softmax()
-        #perhaps need a sigmoid
+
         
     def forward(self, x):
         out = self.flatten(x)
@@ -68,29 +60,30 @@ class NeuralNet(nn.Module):
         out = self.l3(out)
         out = self.relu3(out)
         out = self.l4(out)
+        out = self.relu4(out)
+        out = self.l5(out)
         out = self.softmax(out)
-        #out = self.sigmoid(out)
         return out
 
 
-# In this model, do not provide any data, just follow the coriterin
-# try to minimize diff between s and s(e)
-# s -> e, check s(e) vs s
+import random
+def get_x():
+    a = list(range(1,10))
+    random.shuffle(a)
+    #print(a)
+    a = torch.tensor(a,dtype=torch.float)
+    a=a.to(device).reshape((1,3,3))
+    #print(a)
+    return a
 
-
-            
-# Time vector that will be used as input of our NN
-#t_numpy = np.arange(0, 5+0.01, 0.01, dtype=np.float32)
-#t = torch.from_numpy(t_numpy).reshape(len(t_numpy), 1)
-#t.requires_grad_(True)
-
-x = torch.tensor( list(range(1,10))).float()
-#x=torch.zeros((1,3,3),dtype=torch.float)
+#x = torch.tensor( list(range(1,10))).float()
+x=torch.zeros((1,3,3),dtype=torch.float)
 #x[0,1,1]=1.
 x = x.reshape((1,3,3))
 x = x.to(device)
 x.requires_grad_(True)
 
+x_base = x
 print('x',x)
 
 # Constant for the model
@@ -152,6 +145,7 @@ for epoch in range(num_epochs):
     
     # Forward pass
     #y_pred = model(x_train)
+    x = x_base + get_x()
     y_pred = model(x)
     #print('raw output\n',y_pred)
     #exit()
