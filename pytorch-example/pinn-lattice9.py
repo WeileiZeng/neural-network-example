@@ -67,6 +67,7 @@ class NeuralNet(nn.Module):
 
 
 import random
+#return random x for input
 def get_x():
     a = list(range(1,10))
     random.shuffle(a)
@@ -102,31 +103,25 @@ optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 #m = nn.Sigmoid()
 
 
-# return expectation value of the sum of the three lists
+b1 = torch.ones((9,9,9),dtype=torch.float) *  bench.reshape((9,1,1))
+b2 = torch.ones((9,9,9),dtype=torch.float) *  bench.reshape((1,9,1))
+b3 = torch.ones((9,9,9),dtype=torch.float) *  bench.reshape((1,1,9))
+b = b1 +b2 +b3
+b = b.to(device) #include all terms of  i+j+k:  b[i,j,k]=i+j+k
+
+# return expectation value of the sum (i+j+k) from the three lists
 # each lists contains probs for being 1,...,9
-# each input is 1 1D tensor of length 9
+# each input is a 1D tensor of length 9
+# this sum over i,j,k for prob(i)*prob(j)*prob(k)*(i+j+k)
 def expected_sum(v1,v2,v3):
-    #v1,v2,v3 = y_pred[0,0],y_pred[1,0],y_pred[2,0]
+    #SAMPLE INPUT FOR A COLUMN: v1,v2,v3 = y_pred[0,0],y_pred[1,0],y_pred[2,0]
     v1 = v1.reshape((9,1,1))
     v2 = v2.reshape((1,9,1))
     v3 = v3.reshape((1,1,9))
     prob = (v2 @ v1) @v3 #contain prob for i j k
-
-    #print(v2 @ v1)
-    #exit()
-        
-    b1 = torch.ones((9,9,9),dtype=torch.float) *  bench.reshape((9,1,1))
-    #print(b1)
-    #exit()
-    b2 = torch.ones((9,9,9),dtype=torch.float) *  bench.reshape((1,9,1))
-    b3 = torch.ones((9,9,9),dtype=torch.float) *  bench.reshape((1,1,9))
-    b = b1 +b2 +b3
-    b = b.to(device)
     r = torch.einsum('ijk,ijk->',prob,b).to(device)
     return r
 
-
-#x_train_base = torch.zeros((batch_size,L-1),requires_grad=True)
 bench = torch.tensor(list(range(1,10))).float()
 
 softmax2 = nn.Softmax(dim=2)
@@ -135,116 +130,42 @@ mse = nn.MSELoss()
 for epoch in range(num_epochs):
 
 
-    #p=0.1
-    #e0 = (torch.rand((batch_size,L)) + p).floor()
-    #e0i=e0.type(torch.int8)
-    #s = e0i @ torch.t(H) % 2
-    #s = torch.rand((batch_size,L-1),requires_grad=True).round()    #generate syndrome directly
-    #s.requires_grad_(True)
-    #x_train = x_train_base + s.float()
-    
     # Forward pass
-    #y_pred = model(x_train)
     x = x_base + get_x()
     y_pred = model(x)
-    #print('raw output\n',y_pred)
-    #exit()
-    #e=y_pred.round()
-
-    #se = e.type(torch.int8)@H.t() % 2  #calculate binary syndrome of output error
-    #acc = 1- ((s + se) % 2 ).float().mean() #check if syndrome matches!
-
-    #check if error matches
-    #acc_e = 1-((e - e0i )%2).float().mean() 
-    
-    #se2 = y_pred@Hf.t() % 2  #float version of syndrome to estimate lose
-    #loss1 = nn.MSELoss()(se2,x_train)    # loss 1 minimize the difference to the syndrome
-    #note: use float numbers to loss estimation
-    
-    #loss2 = y_pred.mean()/10.  #minimize weight of output error. use float version!
-    #loss = loss1 + loss2
-
 
     #define loss
-    # copy the tensor and then reshape. Not sure if this affect the calculation of grad in y_pred
-    #_ = torch.empty_like(y_pred)
-    #_.copy_(y_pred)
-    #y_pred = _
-    #y_pred =
-    y_pred = softmax0(y_pred.reshape((9,9)))
+    y_pred = softmax0(y_pred.reshape((9,9))) #softmax for given value among all locations
     y_pred = y_pred.reshape((3,3,9))
-    #y_pred = softmax2(y_pred)
-    #print('adter normalization\n',y_pred)
-    #exit()
-    #logits = y_pred.argmax(1)
-    #acc
-    #loss 1 add up to 15
-    #get expectation value for each blank
-
+    #y_pred = softmax2(y_pred)  #softmax for all values in each blank
 
     #recalculate the expectation value
-    #expected_sum(v1,v2,v3):
-    r = [expected_sum(*y_pred[:,_]) for _ in range(3)]
-    c = [expected_sum(*y_pred[_,:]) for _ in range(3)]
-    #print(r,c)
+    r = [expected_sum(*y_pred[:,_]) for _ in range(3)] #cols
+    c = [expected_sum(*y_pred[_,:]) for _ in range(3)] #rows
     diagnol1 = expected_sum(y_pred[0,0] , y_pred[1,1] , y_pred[2,2])
     diagnol2 = expected_sum(y_pred[0,2] , y_pred[1,1] , y_pred[2,0])
     r.extend(c)
     r.append(diagnol1)
     r.append(diagnol2)
-    #print(r)
-    expect = torch.tensor(r)
-    #for each col
-    #exit()
-    #print('a',a)
-    #exit()
+    expect = torch.tensor(r) # contain all expectation values, that should give 15
     
     
-    #print('bench',bench)
-    #get expectation value for each blank
-    #print(y_pred)
-    #expectation = torch.einsum('ijk,k->ij',[y_pred,bench])
-    #print('expectation',expectation)
-    #rows = expectation.sum(1)
-    #cols = expectation.sum(0)
-    #diagnol1 = torch.tensor([expectation[0,0] + expectation[1,1] + expectation[2,2]])
-    #diagnol2 = torch.tensor([expectation[0,2] + expectation[1,1] + expectation[2,0]])
-    #print(rows,cols,diagnol1,diagnol2)
-    #expect = torch.cat((rows,cols,diagnol1,diagnol2))
     base = torch.ones_like(expect) * 15.
-    #print(expect,base)
-    loss1 = mse(expect,base)
-    #print(loss1)
+    loss1 = mse(expect,base) #make sure all expectation value matches 15
     
     
     #expectation=(bench @ y_pred) .sum(2)
 
 
-    #loss 2: exclusive: minimize prod(y_pred[:,:,i])
-    #loss_row = 
-
-    #loss2  = y_pred.prod(2).sum() + y_pred.prod(0).sum()+y_pred.prod(1).sum()
-    #need diagnol term
-
-    #diagnol1 = y_pred[0,0]
-
+    #loss 2: exclusive
     #elements in each black should be exclusive to other blanks
     r = y_pred.prod(0).prod(0)
     loss2 = r.sum()*1.e7
-    #print(r)
-    #print(y_pred.prod(0))
-    #print(y_pred.prod(0).sum())
 
-    #exit()
     loss = loss1 + loss2
-
-    #loss = loss2
-
     logits = y_pred.argmax(2)+1
 
-    
-    #input()
-    #y_pred.reshape((1,81))
+
     # Backward pass and weight update
     optimizer.zero_grad()
     loss.backward()
