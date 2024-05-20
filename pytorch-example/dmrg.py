@@ -1,6 +1,8 @@
 print('''
 using dmrg data, find ground state energy for hamiltonian,
 currently using ising model at given legnth with random parameters
+log:
+best_acc=-0.000473, loss=5.7e-5
 ''')
 
 import copy
@@ -14,6 +16,8 @@ import torch
 L=8
 folder='../../DMRG/tenpy'
 filename=f'{folder}/data-ising-L{L}-1.pt'  # 41450 entries
+filename=f'{folder}/data-ising-L{L}-2.pt'  # 84950 entries
+print(filename)
 
 # config
 #trials=30
@@ -36,6 +40,8 @@ device = (
     if torch.backends.mps.is_available()
     else "cpu"
 )
+# to choose gpu
+# CUDA_VISIBLE_DEVICES=1,2 python myscript.py
 print(f"Using {device} device")
 
 
