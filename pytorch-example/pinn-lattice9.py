@@ -151,7 +151,7 @@ for epoch in range(num_epochs):
     loss2 = r.sum()*1.e7
 
     loss = loss1 + loss2
-    logits = y_pred.argmax(2)+1
+
 
 
     # Backward pass and weight update
@@ -161,10 +161,36 @@ for epoch in range(num_epochs):
     if epoch % 100 == 0:
         print('y_pred[0,0]',y_pred[0,0])
         print('expect',expect)
+        logits = y_pred.argmax(2)+1
         print(logits)
+        print(y_pred[:,:,4])
         print(f'epoch {epoch}:,loss={loss:.5f},loss1={loss1},loss2={loss2}')
         #input()
         #print(f'epoch {epoch}: acc_s={acc:.3f},acc_e = {acc_e:.3f},loss={loss:.5f},{loss1},{loss2}')
         #print(epoch,loss, 'acc',acc,'loss',loss1,loss2)
         #print(epoch,loss, 'acc',acc)
     
+
+
+
+'''
+training result:
+
+y_pred[0,0] tensor([0.11111111, 0.11111111, 0.09329854, 0.11111111, 0.11111111, 0.11111111,
+        0.11111111, 0.11111111, 0.11111111], device='cuda:0',
+       grad_fn=<SelectBackward0>)
+expect tensor([14.31573009, 14.31573009, 16.33743477, 14.31573009, 14.31573009,
+        16.33743477, 16.33743477, 14.31573009])
+tensor([[1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 3]], device='cuda:0')
+tensor([[0.11111111, 0.11111111, 0.11111111],
+        [0.11111111, 0.11111111, 0.11111111],
+        [0.11111111, 0.11111111, 0.11111111]], device='cuda:0',
+       grad_fn=<SelectBackward0>)
+epoch 999900:,loss=1.18447,loss1=0.963415265083313,loss2=0.22105421125888824
+
+
+get a uniform vector for print(y_pred[:,:,4]), which means the loss function is not right
+
+'''        
