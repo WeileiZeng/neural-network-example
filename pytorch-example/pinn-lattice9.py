@@ -98,11 +98,9 @@ learning_rate = 8e-2
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 #optimizer = torch.optim.Adam(model.parameters())
 
-#H = repetition(L)
-#Hf = H.float()
-#m = nn.Sigmoid()
 
-
+#define constants
+bench = torch.tensor(list(range(1,10))).float()
 b1 = torch.ones((9,9,9),dtype=torch.float) *  bench.reshape((9,1,1))
 b2 = torch.ones((9,9,9),dtype=torch.float) *  bench.reshape((1,9,1))
 b3 = torch.ones((9,9,9),dtype=torch.float) *  bench.reshape((1,1,9))
@@ -122,7 +120,7 @@ def expected_sum(v1,v2,v3):
     r = torch.einsum('ijk,ijk->',prob,b).to(device)
     return r
 
-bench = torch.tensor(list(range(1,10))).float()
+
 
 softmax2 = nn.Softmax(dim=2)
 softmax0 = nn.Softmax(dim=0)
