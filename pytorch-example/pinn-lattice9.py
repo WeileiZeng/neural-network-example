@@ -71,24 +71,19 @@ import random
 def get_x():
     a = list(range(1,10))
     random.shuffle(a)
-    #print(a)
     a = torch.tensor(a,dtype=torch.float)
     a=a.to(device).reshape((1,3,3))
-    #print(a)
     return a
 
-#x = torch.tensor( list(range(1,10))).float()
+#fix variable for input
 x=torch.zeros((1,3,3),dtype=torch.float)
-#x[0,1,1]=1.
 x = x.reshape((1,3,3))
 x = x.to(device)
 x.requires_grad_(True)
-
 x_base = x
-print('x',x)
+print('x_base',x_base)
 
-# Constant for the model
-#k = 1
+
 
 # Instantiate one model with 50 neurons on the hidden layers
 model = NeuralNet(hidden_size=HIDDEN_SIZE,input_size=9,output_size=3*3*9).to(device)
@@ -126,8 +121,6 @@ softmax2 = nn.Softmax(dim=2)
 softmax0 = nn.Softmax(dim=0)
 mse = nn.MSELoss()
 for epoch in range(num_epochs):
-
-
     # Forward pass
     x = x_base + get_x()
     y_pred = model(x)
@@ -147,11 +140,8 @@ for epoch in range(num_epochs):
     r.append(diagnol2)
     expect = torch.tensor(r) # contain all expectation values, that should give 15
     
-    
     base = torch.ones_like(expect) * 15.
     loss1 = mse(expect,base) #make sure all expectation value matches 15
-    
-    
     #expectation=(bench @ y_pred) .sum(2)
 
 
