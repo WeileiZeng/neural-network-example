@@ -59,7 +59,6 @@ print('test shape X Y',X_test.shape,y_test.shape)
 class Deep(nn.Module):
     def __init__(self,layers=[28*28,640,640,60,10]):
         super().__init__()
-        #self.flatten = nn.Flatten() #add for mnist
         modules=[]
         print('processing layers:',layers)
         num_layers=len(layers)
@@ -73,15 +72,9 @@ class Deep(nn.Module):
         self.linear_relu_stack = nn.Sequential(*modules)
         self.output = nn.Linear(layers[-2], layers[-1])
         
-        #self.sigmoid = nn.Sigmoid()
-        #self.softmax = nn.Softmax()
-        
     def forward(self, x):
-        #x = self.flatten(x) #add for mnist
         x = self.linear_relu_stack(x)
         x = self.output(x)
-        #x = self.sigmoid(x)
-        #x = self.softmax(x)
         return x
 
 # check the percentage error in predicted output ( ground state energy)
