@@ -30,8 +30,8 @@ LAYERS[-1]=10
 #LAYERS=[2*L-1,L*8*8,L*8*8,L*8*8,L*8*8,1]
 n_epochs = 2500 #250   # number of epochs to run
 batch_size = 64*8 #10  # size of each batch
-torch.set_printoptions(8)
-
+#torch.set_printoptions(8)
+torch.set_default_dtype(torch.float64)
 
 # Get cpu, gpu or mps device for training.
 device = (
@@ -50,7 +50,7 @@ d = torch.load(filename)
 print('sample entry d[0]')
 print(d[0])
 #d1=d[1]
-d=d.float()  #differ by 1e-9
+#d=d.float()  #differ by 1e-9
 #d2=d[1]
 #print(d[1])
 
@@ -111,8 +111,11 @@ def acc_eval(y_pred,y_batch):
     #print(delta_mean/y_mean)
     #print(  (delta_mean/y_mean).mean() )
     #input()
-    return  (delta_mean/y_mean).mean() 
-    return  torch.sqrt(((y_pred - y_batch)**2).mean())/ ((y_batch).mean())
+    acc = (delta_mean/y_mean).mean()
+    if acc > 0 :
+        acc = - acc
+    return  acc
+#return  torch.sqrt(((y_pred - y_batch)**2).mean())/ ((y_batch).mean())
 
 
 
@@ -165,7 +168,9 @@ def model_train(model, X_train, y_train, X_val, y_val,best_acc=-np.inf,best_weig
         y_val=y_val.to(device)        
         y_pred = model(X_val)
                 #acc = ((y_pred>0) == y_val).type(torch.float).mean()
-        acc = acc_eval(y_pred,y_val)        
+        acc = acc_eval(y_pred,y_val)
+        print( ((y_pred-y_val)/y_val).abs() )
+        print(y_val)
         if acc > best_acc:
             best_acc = acc
             best_weights = copy.deepcopy(model.state_dict())
@@ -201,6 +206,7 @@ for i in range(500):
     #acc = model_train(model, X[train], y[train], X[test], y[test])
     best_acc,best_weights = model_train(model, X, y, X_test, y_test, best_acc, best_weights)
     # restore model and return best accuracy
+
     model.load_state_dict(best_weights) 
     
     acc=best_acc
