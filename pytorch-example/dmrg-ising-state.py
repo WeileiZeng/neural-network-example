@@ -59,7 +59,7 @@ d = torch.load(filename)
 
 truncation = 1e-15
 
-d = d * (d.abs()<truncation) 
+d = d * (d.abs()>truncation) 
 
 print('sample entry d[0]')
 print(d[0])
@@ -170,7 +170,7 @@ def model_train(model, X_train, y_train, X_val, y_val,best_acc=-np.inf,best_weig
                 optimizer.step()
                 # print progress                
                 #acc = acc_eval(y_pred,y_batch)
-                acc = -loss
+                acc = - loss
                 #print(acc)
                 bar.set_postfix(
                     loss=float(loss),
@@ -184,7 +184,7 @@ def model_train(model, X_train, y_train, X_val, y_val,best_acc=-np.inf,best_weig
         y_pred = model(X_val)
                 #acc = ((y_pred>0) == y_val).type(torch.float).mean()
         #acc = acc_eval(y_pred,y_val)
-        acc = - loss_fc(y_pred,y_val)
+        acc = - loss_fn(y_pred,y_val)
         print( ((y_pred-y_val)/y_val).abs() )
         print(y_val)
         if acc > best_acc:
