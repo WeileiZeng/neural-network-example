@@ -27,7 +27,8 @@ filename=f'{folder}/data-ising-L{L}-2.pt'  # 84950 entries
 filename=f'{folder}/data-ising-L5.dict.pt.array'
 _=filename.split('/')[-1]
 filename_checkpoint=f'result/{_}'
-print('input/output files:',filename,filename_checkpoint)
+filename_loss=f'result/{_}.loss'
+print('input/output files:',filename,filename_checkpoint,filename_loss)
 
 # config
 #trials=30
@@ -143,6 +144,7 @@ def model_train(model, X_train, y_train, X_val, y_val,best_acc=-np.inf,best_weig
     ##loss_fn = nn.BCELoss()  # binary cross entropy
     #loss_fn = nn.CrossEntropyLoss()
     loss_fn = nn.MSELoss()
+    loss_list=[]
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
 
@@ -186,8 +188,13 @@ def model_train(model, X_train, y_train, X_val, y_val,best_acc=-np.inf,best_weig
         y_pred = model(X_val)
                 #acc = ((y_pred>0) == y_val).type(torch.float).mean()
         #acc = acc_eval(y_pred,y_val)
-        acc = - loss_fn(y_pred,y_val)
+        loss = loss_fn(y_pred,y_val)
+        loss_list.append(loss)
+        torch.save(loss_list,filename_loss)
+        print(f'loss list saved into {filename_loss}')
+        acc = - loss
         #print( ((y_pred-y_val)/y_val).abs() )
+        
         print(y_pred)
         print(y_pred-y_val)
         print(y_val)
@@ -219,7 +226,7 @@ print(model)
 best_acc = - np.inf   # init to negative infinity
 best_weights = None
 
-for i in range(500):
+for i in range(1):
     perm = torch.rand
     indices = torch.randperm(X.size()[0])
     X=X[indices]
