@@ -40,6 +40,8 @@ LAYERS[-1]=10
 n_epochs = 250 #250   # number of epochs to run
 batch_size = 64*8 #10  # size of each batch
 #torch.set_printoptions(8)
+torch.set_printoptions(linewidth=140)
+
 torch.set_default_dtype(torch.float64)
 
 # Get cpu, gpu or mps device for training.
@@ -185,7 +187,9 @@ def model_train(model, X_train, y_train, X_val, y_val,best_acc=-np.inf,best_weig
                 #acc = ((y_pred>0) == y_val).type(torch.float).mean()
         #acc = acc_eval(y_pred,y_val)
         acc = - loss_fn(y_pred,y_val)
-        print( ((y_pred-y_val)/y_val).abs() )
+        #print( ((y_pred-y_val)/y_val).abs() )
+        print(y_pred)
+        print(y_pred-y_val)
         print(y_val)
         if acc > best_acc:
             best_acc = acc
