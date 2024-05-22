@@ -26,24 +26,27 @@ filename=f'{folder}/data-ising-L{L}-1.pt'  # 41450 entries
 filename=f'{folder}/data-ising-L{L}-2.pt'  # 84950 entries
 filename=f'{folder}/data-ising-L5.dict.pt.array'
 _=filename.split('/')[-1]
-filename_checkpoint=f'result/{_}'
-filename_loss=f'result/{_}.loss'
+filename_checkpoint=f'result/{_}.32'
+filename_loss=f'result/{_}.loss.32'
 print('input/output files:',filename,filename_checkpoint,filename_loss)
 
 # config
 #trials=30
-hidden_size= L * 8 * 64 
+#output_width=95-9
+output_width=10
+hidden_size= L * output_width * 8 * 4
 num_hidden_layers=5
 LAYERS= [hidden_size for _ in range(num_hidden_layers+2)]
 LAYERS[0]=2*L-1
-LAYERS[-1]=10
+
+LAYERS[-1]=output_width
 #LAYERS=[2*L-1,L*8*8,L*8*8,L*8*8,L*8*8,1]
 n_epochs = 250 #250   # number of epochs to run
 batch_size = 64*8 #10  # size of each batch
 #torch.set_printoptions(8)
 torch.set_printoptions(linewidth=140)
 
-torch.set_default_dtype(torch.float64)
+#torch.set_default_dtype(torch.float64)
 
 # Get cpu, gpu or mps device for training.
 device = (
@@ -67,13 +70,13 @@ d = d * (d.abs()>truncation)
 print('sample entry d[0]')
 print(d[0])
 #d1=d[1]
-#d=d.float()  #differ by 1e-9
+d=d.float()  #differ by 1e-9
 #d2=d[1]
 #print(d[1])
 
 #print(d1-d2.double())
 X = d[:,:2*L-1]
-y = d[:,2*L-1:2*L+9]
+y = d[:,2*L-1:2*L-1 + output_width]
 #y=y.reshape((len(y),1))
 #X = d['X']
 #y = d['y']
