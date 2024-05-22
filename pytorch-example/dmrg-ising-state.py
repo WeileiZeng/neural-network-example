@@ -3,6 +3,13 @@ using dmrg data, find ground state energy for hamiltonian,
 currently using ising model at given legnth with random parameters
 log:
 best_acc=-0.000473, loss=5.7e-5
+
+better to set truncation value 1e-16, reduce smalller values to zero; also need an appropriate acc function. e.g. verify the ground state energy.
+
+traning for energy only
+Epoch 1747/2500: 100%|█████████████████████████████████████| 312/312 [00:09<00:00, 33.89batch/s, acc=-5.67e-5, best_acc=-2.71e-5, loss=2.98e-9]
+traning for state:
+Epoch 557/2500: 100%|█████████████████████████████████████████| 312/312 [00:07<00:00, 44.19batch/s, acc=-11.3, best_acc=-2.69e-5, loss=6.92e-7]
 ''')
 
 import copy
@@ -18,7 +25,9 @@ folder='../../DMRG/tenpy/data'
 filename=f'{folder}/data-ising-L{L}-1.pt'  # 41450 entries
 filename=f'{folder}/data-ising-L{L}-2.pt'  # 84950 entries
 filename=f'{folder}/data-ising-L5.dict.pt.array'
-print(filename)
+_=filename.split('/')[-1]
+filename_checkpoint=f'result/{_}'
+print('input/output files:',filename,filename_checkpoint)
 
 # config
 #trials=30
@@ -28,7 +37,7 @@ LAYERS= [hidden_size for _ in range(num_hidden_layers+2)]
 LAYERS[0]=2*L-1
 LAYERS[-1]=10
 #LAYERS=[2*L-1,L*8*8,L*8*8,L*8*8,L*8*8,1]
-n_epochs = 2500 #250   # number of epochs to run
+n_epochs = 250 #250   # number of epochs to run
 batch_size = 64*8 #10  # size of each batch
 #torch.set_printoptions(8)
 torch.set_default_dtype(torch.float64)
@@ -47,6 +56,11 @@ print(f"Using {device} device")
 
 
 d = torch.load(filename)
+
+truncation = 1e-15
+
+d = d * (d.abs()<truncation) 
+
 print('sample entry d[0]')
 print(d[0])
 #d1=d[1]
@@ -155,7 +169,8 @@ def model_train(model, X_train, y_train, X_val, y_val,best_acc=-np.inf,best_weig
                 # update weights
                 optimizer.step()
                 # print progress                
-                acc = acc_eval(y_pred,y_batch)
+                #acc = acc_eval(y_pred,y_batch)
+                acc = -loss
                 #print(acc)
                 bar.set_postfix(
                     loss=float(loss),
@@ -168,12 +183,16 @@ def model_train(model, X_train, y_train, X_val, y_val,best_acc=-np.inf,best_weig
         y_val=y_val.to(device)        
         y_pred = model(X_val)
                 #acc = ((y_pred>0) == y_val).type(torch.float).mean()
-        acc = acc_eval(y_pred,y_val)
+        #acc = acc_eval(y_pred,y_val)
+        acc = - loss_fc(y_pred,y_val)
         print( ((y_pred-y_val)/y_val).abs() )
         print(y_val)
         if acc > best_acc:
             best_acc = acc
             best_weights = copy.deepcopy(model.state_dict())
+            #save into file
+            torch.save(best_weights,filename_checkpoint)
+            print(f'weights saved into {filename_checkpoint} at epoch={epoch}, acc={acc}')
     #skip best acc
     #return acc
     # restore model and return best accuracy
