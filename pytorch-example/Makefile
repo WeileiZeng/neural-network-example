@@ -8,7 +8,9 @@ py	=../env/bin/python
 dmrg:
 	CUDA_VISIBLE_DEVICES=6 $(py) dmrg-ising-state.py
 
-
+#sync figs to weilei's macbook 
+rsync:
+	rsync -rP root@10.200.69.64:/root/weilei/neural-network-example/pytorch-example/fig/ fig
 
 
 #following content not used
