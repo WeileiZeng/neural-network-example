@@ -38,12 +38,12 @@ class LinearRegressionModel(torch.nn.Module):
         def __init__(self):
                 super(LinearRegressionModel, self).__init__()
                 self.linear = torch.nn.Linear(1, 1) # One in and one out
-                L=64*4*8
+                L=8
                 self.sequential = torch.nn.Sequential(
                         torch.nn.Linear(1, L),
                         
                         torch.nn.ELU(L),torch.nn.Linear(L, L),
-                        torch.nn.ELU(L),torch.nn.Linear(L, L),
+                        #torch.nn.ELU(L),torch.nn.Linear(L, L),
                         #torch.nn.ReLU(L),
                         #torch.nn.Linear(L, L),
                         #torch.nn.ReLU(L),
@@ -63,7 +63,7 @@ our_model = LinearRegressionModel()
 #criterion = torch.nn.MSELoss(size_average = False)
 criterion = torch.nn.MSELoss()
 #optimizer = torch.optim.SGD(our_model.parameters(), lr = 0.0000001)
-optimizer = torch.optim.Adam(our_model.parameters(), lr = 0.0000001)
+optimizer = torch.optim.Adam(our_model.parameters(), lr = 0.001)
 
 for epoch in range(5000000):
 
