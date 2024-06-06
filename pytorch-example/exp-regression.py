@@ -4,6 +4,9 @@ code from
 https://www.geeksforgeeks.org/linear-regression-using-pytorch/
 ''')
 
+# ELu give e-5 loss with single layer of size 8
+# ReLU give 5e-3 loss with much larger n network
+
 
 import torch
 from torch.autograd import Variable
