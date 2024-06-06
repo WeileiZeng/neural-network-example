@@ -14,6 +14,10 @@ from torch.autograd import Variable
 x_data=torch.rand((int(1e6),1))*10 + 1
 y_data = x_data * 2 +1
 
+x_test=torch.rand((int(1e5),1))*10 + 1
+y_test = x_test * 2 +1
+
+
 class LinearRegressionModel(torch.nn.Module):
 
 	def __init__(self):
@@ -33,19 +37,26 @@ optimizer = torch.optim.SGD(our_model.parameters(), lr = 0.001)
 
 for epoch in range(5000000):
 
-	# Forward pass: Compute predicted y by passing 
-	# x to the model
-	pred_y = our_model(x_data)
+        our_model.train()
+        # Forward pass: Compute predicted y by passing 
+        # x to the model
+        pred_y = our_model(x_data)
 
-	# Compute and print loss
-	loss = criterion(pred_y, y_data)
+        # Compute and print loss
+        loss = criterion(pred_y, y_data)
 
-	# Zero gradients, perform a backward pass, 
-	# and update the weights.
-	optimizer.zero_grad()
-	loss.backward()
-	optimizer.step()
-	print(' epoch {}, loss {}'.format(epoch, loss.item()), end='\r' )
+        # Zero gradients, perform a backward pass, 
+        # and update the weights.
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        #print(' epoch {}, loss {}'.format(epoch, loss.item()), end='\r' )
+
+        if epoch % 100 == 0:
+                our_model.eval()
+                pred_y = our_model(x_test)
+                loss_val = criterion(pred_y, y_test)        
+                print(' epoch {}, training loss {},        \tvalidation loss {}.    '.format(epoch, loss.item(), loss_val.item()), end='\r' )        
         
 print()
 new_var = Variable(torch.Tensor([[4.0]]))
