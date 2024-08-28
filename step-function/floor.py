@@ -2,9 +2,32 @@ print('''
 Author: Weilei Zeng
 Date: 2024-08-27
 # train a classification model to simulate a floor function
+next step: use two model for every other region
 ''')
 note='''
 # statistics
+For width =0.98
+ epoch 27200, training loss 1.4710922241210938,           validation loss 1.509655475616455.      acc 0.9539999961853027
+tensor([1, 1, 2, 3, 5, 5, 6, 8, 8, 9, 1, 2, 2, 4, 5, 5, 7, 8, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9], device='cuda:7')
+tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=torch.int32) reference
+
+For width = 0.8
+epoch 22800, training loss 1.524492859840393,            validation loss 1.4781208038330078.     acc 0.9850000143051147
+tensor([1, 1, 3, 4, 4, 5, 6, 8, 8, 9, 1, 2, 3, 4, 5, 6, 6, 8, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9], device='cuda:7')
+tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=torch.int32) reference
+
+For width =0.6
+epoch 25200, training loss 1.5184835195541382,           validation loss 1.4661011695861816.     acc 0.9980000257492065
+tensor([0, 2, 3, 4, 4, 6, 7, 8, 9, 9, 1, 2, 3, 4, 4, 6, 7, 8, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9], device='cuda:7')
+tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=torch.int32) reference
+
+For width = 0.4
+epoch 8000, training loss 1.4835686683654785,            validation loss 1.4741820096969604.     acc 1.0
+tensor([0, 2, 2, 3, 5, 6, 6, 8, 9, 9, 1, 2, 3, 4, 5, 6, 6, 8, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9], device='cuda:7')
+tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=torch.int32) reference
+
+For every other region
+acc=1
 
 '''
 
@@ -14,19 +37,34 @@ import torch.nn as nn
 
 # CONFIG
 batch_size = 16
-test_size = int(1e5)
+test_size = int(1e6)
 n_epoches = int(1e5)
 hidden_size = 10
+num_hidden_layers = 2
 pieces = 10 # number of pieces in the piecewise functions to be simulated
+width=0.8
+
 
 device = 'cuda:7'
 #torch.cuda.set_device(0)
 torch.set_default_device(device)
 torch.set_printoptions(linewidth=150)
 
+
+def get_every_other_data(n):
+    # only return data in every other range of length 1
+    n = int(n)
+    ii = torch.randint(pieces//2,(n,1))
+    ff = torch.rand(n,1)
+    X = ii*2 + ff
+    col_indices = ii.squeeze()
+    y = torch.zeros(n,pieces)
+    row_indices = torch.range(0,y.shape[0]-1, dtype=torch.long)
+    y[row_indices,col_indices]=1
+    return X,y
 def get_short_data(n):
-    # only return data in range 0.25-0.75
-    width=0.5
+    # only return data in range ~ width
+    #width=0.9
     n = int(n)
     ii = torch.randint(pieces,(n,1))
     ff = torch.rand(n,1)*width + (1-width)/2   # change data range to be a short smooth region
@@ -39,6 +77,7 @@ def get_short_data(n):
 
 
 def get_data(n):
+    return get_every_other_data(n)
     return get_short_data(n)
     n = int(n)
     X = torch.rand(n,1) * pieces
@@ -91,7 +130,7 @@ class PreClassificationModel(torch.nn.Module):
                             nn.Linear(ll,ll))
                       res_=ResBlock(module_)
                       return res_
-                relu_stack = [get_block(ll)]*8
+                relu_stack = [get_block(ll)]*num_hidden_layers
 
                 #relu_stack=[nn.BatchNorm1d(ll), act(), nn.Dropout(),nn.Linear(ll,ll)]*8
                 self.classification = nn.Sequential(
@@ -118,17 +157,22 @@ class PreClassificationModel(torch.nn.Module):
 def test_model(model):
     # test the classification of the model
     #x = torch.Tensor([[1.0], [2.0], [3.0]])
-    x = torch.range(1,10).reshape((10,1)) - 0.45
+    x0 = torch.range(1,10).reshape((10,1))
+    x = torch.cat([x0+0.01,x0+0.1,x0+0.3,x0+0.5])
+
     #x = tensor([[0.7000], [1.7000], [2.7000], [3.7000], [4.7000], [5.7000], [6.7000], [7.7000], [8.7000], [9.7000]])
     x = x.to(device)
     b = model.classification(x)
     #print(b)
     eps=1e-5
-    print( b * (b>eps))
+    _ = b * (b>eps)
+    #print(_)
     values, indices = b.max(dim=1)
     #print(values)
     print(indices) # expect to be [0,1,2,3,4,5,6,7,8,9]
-    print(torch.range(0,pieces-1).type(torch.int),'reference')
+    r0=torch.range(0,pieces-1).type(torch.int)
+    r = torch.cat([r0]*4)
+    print(r,'reference')
     
 our_model = PreClassificationModel()
 print(our_model)
