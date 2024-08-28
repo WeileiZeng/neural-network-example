@@ -14,7 +14,7 @@ import torch.nn as nn
 
 # CONFIG
 batch_size = 16
-test_size = 1000
+test_size = int(1e5)
 n_epoches = int(1e5)
 hidden_size = 10
 pieces = 10 # number of pieces in the piecewise functions to be simulated
@@ -26,9 +26,10 @@ torch.set_printoptions(linewidth=150)
 
 def get_short_data(n):
     # only return data in range 0.25-0.75
+    width=0.5
     n = int(n)
     ii = torch.randint(pieces,(n,1))
-    ff = torch.rand(n,1)*0.2+0.4   # change data range to be a short smooth region
+    ff = torch.rand(n,1)*width + (1-width)/2   # change data range to be a short smooth region
     X = ii+ff
     col_indices = ii.squeeze()
     y = torch.zeros(n,pieces)
@@ -144,6 +145,19 @@ criterion = torch.nn.CrossEntropyLoss()
 #optimizer = torch.optim.SGD(our_model.parameters(), lr = 0.0000001)
 optimizer = torch.optim.Adam(our_model.parameters(), lr = 0.001)
 
+def accuracy(pred_y,y_data):
+      #print(pred_y)
+      #print(y_data)
+      y1=torch.argmax(pred_y,dim=1)
+      y2=torch.argmax(y_data,dim=1)
+      #print(y1)
+      #print(y2)
+      #tt
+      #exit()
+      rate = 1- torch.count_nonzero(y1-y2)/pred_y.shape[0]
+      return rate
+
+
 for epoch in range(500000):
         our_model.train()
         x_data,y_data = get_data(batch_size)
@@ -173,9 +187,10 @@ for epoch in range(500000):
                 our_model.eval()
                 pred_y = our_model(x_test)
                 loss_val = criterion(pred_y, y_test)
+                acc = accuracy(pred_y,y_test)
                 #print(pred_y[:10])
                 #print(y_test[:10])                
-                print(' '*35,' epoch {}, training loss {},        \tvalidation loss {}.    '.format(epoch, loss.item(), loss_val.item()), end='\n' )
+                print(' '*5,' epoch {}, training loss {},        \tvalidation loss {}.    \tacc {}'.format(epoch, loss.item(), loss_val.item(), acc.item()), end='\n' )
                 #end='\r'
                 #input()
                 test_model(our_model)
