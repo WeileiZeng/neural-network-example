@@ -112,12 +112,13 @@ class ResBlock(nn.Module):
         super(ResBlock, self).__init__()
         self.block = block
     def forward(self, x):
+        return self.block(x) # not too much difference
         return x + self.block(x)
 
-class PreClassificationModel(torch.nn.Module):
+class RegressionModel(torch.nn.Module):
 
         def __init__(self):                
-                super(PreClassificationModel, self).__init__()
+                super(RegressionModel, self).__init__()
                 l=hidden_size
                 ll = hidden_size * 10
                 out=10
@@ -174,7 +175,7 @@ def test_model(model):
     r = torch.cat([r0]*4)
     print(r,'reference')
     
-our_model = PreClassificationModel()
+our_model = RegressionModel()
 print(our_model)
 
 
@@ -182,9 +183,9 @@ print(our_model)
 #exit()
 
 #criterion = torch.nn.MSELoss(size_average = False)
-#criterion = torch.nn.MSELoss()
+criterion = torch.nn.MSELoss()
 #criterion = torch.nn.BCELoss()
-criterion = torch.nn.CrossEntropyLoss()
+#criterion = torch.nn.CrossEntropyLoss()
 #criterion = torch.nn.BCEWithLogitsLoss()
 #optimizer = torch.optim.SGD(our_model.parameters(), lr = 0.0000001)
 optimizer = torch.optim.Adam(our_model.parameters(), lr = 0.001)
